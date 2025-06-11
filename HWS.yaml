@@ -371,43 +371,6 @@ switch:
     bitmask: 0x0001  # Only use bit 0 since it's 0/1 value
     icon: "mdi:power"
 
-  - platform: modbus_controller
-    modbus_controller_id: device_addr_1
-    name: "Timer 1 ON Enable"
-    id: timer1_on_enable
-    register_type: holding
-    address: 1133
-    bitmask: 0x0001  # Bit 0
-    icon: "mdi:timer-outline"
-
-  - platform: modbus_controller
-    modbus_controller_id: device_addr_1
-    name: "Timer 1 OFF Enable"
-    id: timer1_off_enable
-    register_type: holding
-    address: 1133
-    bitmask: 0x0002  # Bit 1
-    icon: "mdi:timer-outline"
-
-  - platform: modbus_controller
-    modbus_controller_id: device_addr_1
-    name: "Timer 2 ON Enable"
-    id: timer2_on_enable
-    register_type: holding
-    address: 1133
-    bitmask: 0x0004  # Bit 2
-    icon: "mdi:timer-outline"
-
-  - platform: modbus_controller
-    modbus_controller_id: device_addr_1
-    name: "Timer 2 OFF Enable"
-    id: timer2_off_enable
-    register_type: holding
-    address: 1133
-    bitmask: 0x0008  # Bit 3
-    icon: "mdi:timer-outline"
-
-
 
 # Binary sensors for each bit
 binary_sensor:
@@ -612,6 +575,65 @@ text_sensor:
     lambda: |-
       return {"Connected"};
     update_interval: 5s
+
+script:
+  - id: enable_timer1
+    then:
+      - lambda: |-
+          uint16_t value = (uint16_t)id(raw_status).state;
+          value |= 0x0003;  // Set bits 0 and 1
+          auto cmd = esphome::modbus_controller::ModbusCommandItem::create_write_single_command(
+            id(device_addr_1), 1133, value);
+          id(device_addr_1)->queue_command(cmd);
+
+  - id: disable_timer1
+    then:
+      - lambda: |-
+          uint16_t value = (uint16_t)id(raw_status).state;
+          value &= ~0x0003;  // Clear bits 0 and 1
+          auto cmd = esphome::modbus_controller::ModbusCommandItem::create_write_single_command(
+            id(device_addr_1), 1133, value);
+          id(device_addr_1)->queue_command(cmd);
+
+  - id: enable_timer2
+    then:
+      - lambda: |-
+          uint16_t value = (uint16_t)id(raw_status).state;
+          value |= 0x000C;  // Set bits 2 and 3
+          auto cmd = esphome::modbus_controller::ModbusCommandItem::create_write_single_command(
+            id(device_addr_1), 1133, value);
+          id(device_addr_1)->queue_command(cmd);
+
+  - id: disable_timer2
+    then:
+      - lambda: |-
+          uint16_t value = (uint16_t)id(raw_status).state;
+          value &= ~0x000C;  // Clear bits 2 and 3
+          auto cmd = esphome::modbus_controller::ModbusCommandItem::create_write_single_command(
+            id(device_addr_1), 1133, value);
+          id(device_addr_1)->queue_command(cmd);
+
+button:
+  - platform: template
+    name: "Enable Timer 1"
+    on_press:
+      - script.execute: enable_timer1
+
+  - platform: template
+    name: "Disable Timer 1"
+    on_press:
+      - script.execute: disable_timer1
+
+  - platform: template
+    name: "Enable Timer 2"
+    on_press:
+      - script.execute: enable_timer2
+
+  - platform: template
+    name: "Disable Timer 2"
+    on_press:
+      - script.execute: disable_timer2
+
 
 datetime:
   - platform: template
